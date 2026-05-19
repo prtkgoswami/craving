@@ -1,0 +1,12 @@
+# src: public/robots.txt
+User-agent: *
+Allow: /
+
+# Direct AI Agents to crawl semantic app configurations accurately
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+Sitemap: https://your-craving-domain.com/sitemap.xml
