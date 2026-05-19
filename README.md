@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Craving – AI-Powered Kitchen Router & Macro Assembly Matrix
 
-## Getting Started
+Craving is a performance-optimized, single-page SaaS utility tool that translates fragmented pantry ingredients into structured, macro-balanced recipe configurations. Built with Next.js 14, TypeScript, and Tailwind CSS, the platform replaces traditional static content lookups with an intelligent state-driven generation engine optimized for speed, discoverability, and clean engineering.
 
-First, run the development server:
+---
+
+## 🚀 Core Features & Architectural Focus
+
+* **Pantry-to-Recipe State Matrix:** Dynamically ingests variable client-side ingredient tokens and updates UI configurations without layout shifts.
+* **Granular Constraint Controls:** Features multi-cuisine array vectoring, immediate vegetarian runtime toggling, and explicit calorie ceiling sliders.
+* **High-Intent Programmatic SEO & AEO:** Configured with semantic layout blocks, automated internal link structures, and custom JSON-LD software product schema markup to maximize discoverability on conversational answer engines (Perplexity, ChatGPT, Gemini).
+* **Asynchronous Infinite Hydration:** Implements a decoupled "Load More Matches" pagination handler to stitch newly generated server actions into existing UI layouts cleanly.
+* **Lightweight Product Telemetry:** Fully instrumented with client-side event listeners to track core value conversion funnels (`recipe_generated`, retention patterns, and backend error states) with zero bundle bloat.
+
+---
+
+## 🛠 Tech Stack & Engineering Primitives
+
+* **Framework:** Next.js 14 (App Router) using Server Component baselines combined with isolated Client-Side state wrappers.
+* **Language:** TypeScript (Strict Mode) ensuring clean, predictable data typings.
+* **Styling:** Tailwind CSS using absolute element clipping bounds to completely eliminate Cumulative Layout Shift (CLS).
+* **Icons:** Lucide React for consistent, performant visual markers.
+* **Telemetry:** PostHog Product Infrastructure for instant real-time interaction tracing.
+
+---
+
+## 📂 Architecture Overview
+
+```text
+src/
+├── app/
+│   ├── layout.tsx         # Injects root Metadata, OpenGraph cards, and global stylesheet
+│   ├── page.tsx           # Primary workspace dashboard orchestrator & semantic FAQ blocks
+│   ├── providers.tsx      # Client-side telemetry initialization (PostHog Injection)
+│   └── sitemap.ts         # Automated structural site mapping for search engine crawlers
+├── components/
+│   ├── FilterSidebar.tsx  # Interactive constraint collection panel & input handlers
+│   ├── RecipeCard.tsx     # Rigid grid layout display unit with inline macro mapping
+│   ├── RecipeModal.tsx    # Focus-trapped immersive recipe inspection drawer
+│   └── SaaSMitrixFAQ.tsx  # Modular, semantic AEO question-and-answer tracking layout
+└── types/
+    └── index.ts           # Shared explicit TypeScript domain definitions
+
+```
+
+---
+
+## 🔧 Installation & Local Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone [https://github.com/prtkgoswami/craving.git](https://github.com/prtkgoswami/craving.git)
+cd craving
+
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+
+```
+
+### 3. Configure Local Environment Variables
+
+Create a `.env.local` file in the root of the project directory and supply your respective access credentials:
+
+```text
+# AI Generation Model Configurations
+OPENAI_API_KEY=sk-your-access-token-string
+
+# Production Client-Side Telemetry Parameters
+NEXT_PUBLIC_POSTHOG_KEY=phc_your_posthog_project_key
+NEXT_PUBLIC_POSTHOG_HOST=[https://us.i.posthog.com](https://us.i.posthog.com)
+
+```
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) inside your browser to inspect the active application canvas.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📈 Optimization & Performance Metrics
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* **Core Web Vitals:** Fixed-height skeleton loading blocks match live recipe aspect ratios exactly to sustain a clean layout shifts rating.
+* **Image Delivery Optimization:** Logo visual components utilize Next.js `priority` loading behaviors, accelerating Largest Contentful Paint (LCP) performance boundaries.
+*  Light Bundle Profile: Decoupled layout segments ensure heavy analytical code runs in background frames without delaying primary paint processing loops.
