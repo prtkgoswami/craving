@@ -5,8 +5,8 @@ export async function GET() {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://craving.pratikgoswami.dev</loc>
-    <lastModified>${new Date().toISOString()}</lastModified>
-    <changeFrequency>weekly</changeFrequency>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 </urlset>`;
@@ -14,8 +14,7 @@ export async function GET() {
   return new NextResponse(sitemapXml, {
     headers: {
       "Content-Type": "application/xml",
-      "Cache-Control":
-        "public, max-age=3600, s-maxage=18000, stale-while-revalidate=60",
+      "Cache-Control": "public, max-age=3600, s-maxage=18000, stale-while-revalidate=60",
     },
   });
 }
