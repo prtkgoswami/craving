@@ -6,21 +6,16 @@ import FilterSidebar from "@/components/FilterSidebar";
 import RecipeCard from "@/components/RecipeCard";
 import RecipeModal from "@/components/RecipeModal";
 import SaaSMitrixFAQ from "@/components/SaaSMitrixFAQ";
-import { Utensils, RotateCw } from "lucide-react";
+import { Utensils, RotateCw, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import posthog from "posthog-js";
 
 export default function Home() {
-  const [ingredients, setIngredients] = useState<string[]>([
-    "Wild Salmon",
-    "Organic Kale",
-    "Lemon",
-  ]);
-  const [selectedMealType, setSelectedMealType] = useState<MealType>("Dinner");
-  const [selectedCuisines, setSelectedCuisines] = useState<CuisineType[]>([
-    "Indian",
-    "Italian",
-  ]);
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [selectedMealType, setSelectedMealType] = useState<MealType>(
+    "" as MealType,
+  );
+  const [selectedCuisines, setSelectedCuisines] = useState<CuisineType[]>([]);
   const [isVegetarian, setIsVegetarian] = useState(false);
   const [isCalorieEnabled, setIsCalorieEnabled] = useState(true);
   const [targetCalories, setTargetCalories] = useState<number>(650);
@@ -30,6 +25,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Track continuous stream termination states
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -56,6 +54,7 @@ export default function Home() {
     else {
       setIsLoading(true);
       setRecipes([]);
+      setHasMore(true); // Reset flag context on a fresh generation query pass
     }
     try {
       const response = await fetch("/api/recommendations", {
@@ -66,11 +65,23 @@ export default function Home() {
           mealType: selectedMealType,
           cuisines: selectedCuisines,
           isVegetarian,
-          targetCalories: isCalorieEnabled ? targetCalories : undefined,
+          targetCalories,
           skipCount: isAccumulating ? recipes.length : 0,
+          existingNames: isAccumulating ? recipes.map((r) => r.name) : [],
         }),
       });
       const data = await response.json();
+
+      if (data.usage) {
+        posthog.capture("recipe_generation_token_consumed", {
+          input_tokens: data.usage.inputTokens,
+          output_tokens: data.usage.outputTokens,
+          total_tokens: data.usage.totalTokens,
+          ingredient_count: ingredients.length,
+          is_pagination: isAccumulating,
+        });
+      }
+
       if (!response.ok) {
         posthog.capture("recipe_generation_failed", {
           error: data.error || "Unknown API Error",
@@ -87,9 +98,24 @@ export default function Home() {
         is_calorie_bounded: isCalorieEnabled,
       });
 
-      setRecipes((prev) =>
-        isAccumulating ? [...prev, ...data.recipes] : data.recipes,
-      );
+      // Update state tracking directly from API payload feedback
+      setHasMore(data.hasMore ?? false);
+
+      setRecipes((prevRecipes) => {
+        if (!isAccumulating) return data.recipes || [];
+
+        const seenNames = new Set(prevRecipes.map((r) => r.name.toLowerCase()));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const uniqueIncoming = (data.recipes || []).filter((r: any) => {
+          if (seenNames.has(r.name.toLowerCase())) {
+            return false;
+          }
+          seenNames.add(r.name.toLowerCase());
+          return true;
+        });
+
+        return [...prevRecipes, ...uniqueIncoming];
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to communicate with engine.");
@@ -100,7 +126,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-12 lg:px-16 max-w-[1536px] mx-auto space-y-16">
+    <main className="min-h-screen px-6 py-8 md:px-12 lg:px-16 max-w-[1536px] mx-auto space-y-16 md:text-[15px] lg:text-[16px]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -108,20 +134,19 @@ export default function Home() {
 
       <div className="space-y-8">
         <header>
-          <header>
-            <h1 className="text-3xl font-serif tracking-tight text-brand-primary font-bold flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="Craving Logo"
-                width={36}
-                height={36}
-                priority
-                className="object-contain"
-              />
-              <span>Craving</span>
-            </h1>
-          </header>
+          <h1 className="text-3xl font-serif tracking-tight text-brand-primary font-bold flex items-center">
+            <Image
+              src="/logo.png"
+              alt="Craving Logo"
+              width={45}
+              height={45}
+              priority
+              className="object-contain"
+            />
+            <span className="-ml-2">raving</span>
+          </h1>
         </header>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-4 lg:sticky lg:top-8">
             <FilterSidebar
@@ -134,7 +159,7 @@ export default function Home() {
                 setIngredients(ingredients.filter((_, i) => i !== idx))
               }
               selectedMealType={selectedMealType}
-              onSelectMealType={setSelectedMealType}
+              onSelectMealType={(type) => setSelectedMealType(type)}
               selectedCuisines={selectedCuisines}
               onToggleCuisine={handleToggleCuisine}
               isVegetarian={isVegetarian}
@@ -150,32 +175,45 @@ export default function Home() {
 
           <section className="lg:col-span-8 flex flex-col justify-between h-full min-h-[400px]">
             {errorMsg && (
-              <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl text-sm text-red-800">
+              <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl text-sm md:text-base text-red-800 font-medium">
                 {errorMsg}
               </div>
             )}
             {recipes.length > 0 && (
-              <h3 className="text-2xl font-serif font-bold text-brand-secondary mb-6 tracking-tight">
-                {recipes.length} Global Matches found
+              <h3 className="text-base md:text-lg font-serif font-bold text-brand-secondary mb-6 tracking-tight">
+                {recipes.length} Recipes found
               </h3>
             )}
 
             {!isLoading && recipes.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-brand-tertiary rounded-2xl bg-[#F4EDE3]/10 my-auto">
-                <Utensils className="w-12 h-12 text-brand-tertiary mb-3" />
-                <p className="font-serif text-lg text-brand-secondary font-medium">
+              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-400 rounded-2xl bg-[#F4EDE3]/25 my-auto p-6 shadow-sm">
+                <Utensils className="w-12 h-12 text-slate-600 mb-4" />
+                <p className="font-serif text-xl md:text-2xl text-slate-800 font-bold tracking-tight text-center">
                   Your presentation plate is clean
+                </p>
+                <p className="text-sm md:text-base text-slate-600 mt-2 max-w-md text-center leading-relaxed">
+                  Select your ingredients, cuisine, and meal type above to build
+                  your custom recipe dashboard.
                 </p>
               </div>
             )}
 
             {isLoading && recipes.length === 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
-                    className="bg-slate-100 border border-brand-tertiary rounded-2xl h-[168px] w-full"
-                  />
+                    className="border border-slate-300 bg-white rounded-2xl h-[185px] w-full p-5 space-y-4 shadow-sm flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="h-5 bg-zinc-300 rounded-md w-3/4 animate-pulse" />
+                      <div className="h-4 bg-zinc-200 rounded-md w-1/2 animate-pulse" />
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <div className="h-7 bg-zinc-200/80 rounded-lg w-20 animate-pulse" />
+                      <div className="h-7 bg-zinc-200/80 rounded-lg w-20 animate-pulse" />
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -190,23 +228,35 @@ export default function Home() {
               ))}
             </div>
 
+            {/* Managed Stream Pagination Layer Block */}
             {recipes.length > 0 && (
               <div className="mt-12 flex justify-center w-full">
-                <button
-                  type="button"
-                  onClick={() => fetchRecipes(true)}
-                  disabled={isLoadingMore || isLoading}
-                  className="text-brand-primary font-medium tracking-wide text-xs uppercase hover:text-[#c94928] border border-brand-tertiary bg-white rounded-full px-8 py-4 shadow-sm transition-all flex items-center justify-center gap-2 min-w-[220px] cursor-pointer"
-                >
-                  {isLoadingMore ? (
-                    <>
-                      <RotateCw className="w-4 h-4 animate-spin text-brand-primary" />
-                      <span>Fetching matches...</span>
-                    </>
-                  ) : (
-                    <span>Load More Matches</span>
-                  )}
-                </button>
+                {hasMore ? (
+                  <button
+                    type="button"
+                    onClick={() => fetchRecipes(true)}
+                    disabled={isLoadingMore || isLoading}
+                    className="text-brand-primary font-medium tracking-wide text-xs md:text-sm font-semibold uppercase hover:text-[#c94928] border border-brand-tertiary bg-white rounded-full px-8 py-4 shadow-sm transition-all flex items-center justify-center gap-2 min-w-[240px] cursor-pointer"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <RotateCw className="w-4 h-4 animate-spin text-brand-primary" />
+                        <span>Generating recipes...</span>
+                      </>
+                    ) : (
+                      <span>Generate More Recipes</span>
+                    )}
+                  </button>
+                ) : (
+                  // Clean termination notice when hasMore evaluates to false
+                  <div className="flex flex-col items-center gap-1 py-3 text-slate-500 animate-fade-in">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <span className="text-xs md:text-sm font-medium tracking-wide">
+                      You&apos;ve reached the end of our current culinary
+                      profile combinations.
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -214,12 +264,11 @@ export default function Home() {
       </div>
 
       <hr className="border-brand-tertiary" />
-
-      {/* Extracted Modular SaaS Feature Matrix Block */}
       <SaaSMitrixFAQ />
 
       <RecipeModal
         recipe={selectedRecipe}
+        userIngredients={ingredients}
         onClose={() => setSelectedRecipe(null)}
       />
     </main>
