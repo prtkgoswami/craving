@@ -10,6 +10,15 @@
   --font-sans: "Inter", "sans-serif";
 }
 
+@layer base {
+  @media (min-width: 768px) {
+    html {
+      /* Elevates the standard browser 16px font-size default smoothly */
+      font-size: 106.25%; /* This targets a baseline where 1rem handles ~17px, bringing text-xs (0.75rem) right up to ~14px */
+    }
+  }
+}
+
 body {
   background-color: var(--color-brand-bg);
   color: var(--color-brand-secondary);
