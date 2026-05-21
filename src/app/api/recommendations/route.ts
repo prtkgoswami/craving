@@ -2,9 +2,24 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import crypto from "crypto";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
-const rateLimitMap = new Map<string, number>();
+
+// Initialize Upstash Redis connections out of the request execution path
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
+
+// Configure sliding rate limit window: Max 3 generations per minute per client IP
+const ratelimit = new Ratelimit({
+  redis: redis,
+  limiter: Ratelimit.slidingWindow(3, "1 m"),
+  analytics: true,
+  prefix: "@ratelimit/craving-recipes",
+});
 
 export async function POST(request: Request) {
   try {
@@ -15,16 +30,26 @@ export async function POST(request: Request) {
       );
     }
 
-    // Rate limiting check
-    const ip = request.headers.get("x-forwarded-for") || "anonymous";
-    const now = Date.now();
-    if (rateLimitMap.has(ip) && now - (rateLimitMap.get(ip) || 0) < 3000) {
+    // Capture verified edge platform proxy IP headers over standard user strings
+    const ip = request.headers.get("x-real-ip") || 
+               request.headers.get("x-vercel-proxied-for") || 
+               "anonymous";
+
+    // Distributed rate limit invocation check
+    const { success, limit, reset, remaining } = await ratelimit.limit(ip);
+    if (!success) {
       return NextResponse.json(
-        { error: "Please wait a moment between requests." },
-        { status: 429 },
+        { error: "Too many requests. Please wait a minute before generating more recipes." },
+        { 
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": String(limit),
+            "X-RateLimit-Remaining": String(remaining),
+            "X-RateLimit-Reset": String(reset),
+          }
+        },
       );
     }
-    rateLimitMap.set(ip, now);
 
     const body = await request.json();
     const {
@@ -36,7 +61,6 @@ export async function POST(request: Request) {
       existingNames = [],
     } = body;
 
-    // 1. Sanitize and enforce explicit array length limits
     const sanitized = ingredients
       .map((i: any) => String(i).trim().replace(/[<>]/g, "").toLowerCase())
       .filter((i: any) => i.length > 0);
@@ -57,15 +81,12 @@ export async function POST(request: Request) {
         ? `CRITICAL EXCLUSIONS: Do NOT suggest any of these recipes: ${existingNames.join(", ")}.`
         : "";
 
-    // ... Keep your jsonSchema configuration exactly as it is ...
-
     let attempts = 0;
     const maxAttempts = 2;
     const finalPayload = { recipes: [], hasMore: false };
     let usage;
 
     while (attempts < maxAttempts) {
-      // Step up creative variance on retry
       const executionTemperature = attempts === 0 ? 0.5 : 0.8;
 
       const systemPrompt = `
@@ -161,24 +182,20 @@ export async function POST(request: Request) {
         );
 
         if (parsedContent.recipes && parsedContent.recipes.length > 0) {
-          // 2. Mathematically enforce the >= 60% user ingredient matching rule
           const validatedRecipes = parsedContent.recipes
             .filter((recipe: any) => {
-              // Deduplicate against active client viewport view names first
               const isDuplicate = existingNames.some(
                 (name: string) =>
                   name.toLowerCase() === recipe.name.toLowerCase(),
               );
               if (isDuplicate) return false;
 
-              // Check intersections against the user's chosen ingredients array
               const recipeIngredients = recipe.ingredientsUsed.map(
                 (i: string) => i.toLowerCase(),
               );
 
               const matchedCount = sanitized.reduce(
                 (count: number, userIng: string) => {
-                  // Check if the user's input string is present inside any string within the generated recipe ingredient item array
                   const isUsed = recipeIngredients.some((recipeIng: string) =>
                     recipeIng.includes(userIng),
                   );
@@ -188,16 +205,19 @@ export async function POST(request: Request) {
               );
 
               const matchPercentage = matchedCount / sanitized.length;
-              return matchPercentage >= 0.6; // 60% threshold guardrail
+              return matchPercentage >= 0.6;
             })
             .map((recipe: any) => ({
               ...recipe,
-              id: crypto.randomUUID(), // Guarantee key uniqueness
+              id: crypto.randomUUID(),
             }));
 
-          // If we found valid recipes passing the threshold filter, commit and exit retry loop
           if (validatedRecipes.length > 0) {
             finalPayload.recipes = validatedRecipes;
+            break;
+          } else if (attempts === 0) {
+            // PROMPT CIRCUIT BREAKER: If structural matching filters yield an empty set,
+            // abort right away instead of running an extra billing cycle loop
             break;
           }
         }
@@ -208,12 +228,9 @@ export async function POST(request: Request) {
       attempts++;
     }
 
-    // Determine pagination status programmatically based on output performance
-    // If the valid output array contains items, assume hasMore matches standard page size expectations
     if (finalPayload.recipes && finalPayload.recipes.length > 0) {
       finalPayload.hasMore = finalPayload.recipes.length >= 4;
     } else {
-      // Both runs yielded 0 high-quality matches -> set hasMore to false to hide infinite scroll triggers
       finalPayload.hasMore = false;
     }
 
