@@ -13,18 +13,18 @@ export const metadata: Metadata = {
     "saas recipe builder",
     "smart kitchen automation",
   ],
-  authors: [{ name: "Craving Dev Team" }],
+  authors: [{ name: "Pratik Goswami" }],
   openGraph: {
     title: "Craving | AI Recipe Generator & Smart Macro Planner",
     description:
       "Input ingredients, set macro limits, and generate michelin-star profiles instantly.",
-    url: "https://craving-app.com", // Replace with production URL
+    url: "https://craving.pratikgoswami.dev/",
     siteName: "Craving App",
     locale: "en_US",
     type: "website",
     images: [
       {
-        url: "https://craving-app.com/og-image.png",
+        url: "https://craving.pratikgoswami.dev/craving_sc.png",
         width: 1200,
         height: 630,
         alt: "Craving SaaS Platform Dashboard Preview",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     title: "Craving | AI Recipe Generator",
     description:
       "Input ingredients, set macros, and generate perfect dinner plans instantly.",
-    images: ["https://craving-app.com/og-image.png"],
+    images: ["https://craving.pratikgoswami.dev/craving_sc.png"],
   },
   robots: {
     index: true,

@@ -42,13 +42,27 @@ export default function RecipeCard({ recipe, onSelect }: RecipeCardProps) {
         <div className="flex items-center gap-1 font-semibold text-brand-secondary">
           <Clock className="w-4 h-4 text-slate-500" /> {recipe.cookingTime}
         </div>
+        
         <div className="flex items-center gap-1 font-semibold text-brand-secondary">
           <Flame className="w-4 h-4 text-brand-primary" /> {recipe.calories} kcal
         </div>
-        <div className="flex gap-1.5 text-xs md:text-sm bg-brand-tertiary/40 px-2 py-1 rounded text-slate-800 font-medium">
-          <span>P: <strong className="font-bold text-slate-900">{recipe.macros.protein}</strong></span>
-          <span>C: <strong className="font-bold text-slate-900">{recipe.macros.carbs}</strong></span>
-          <span>F: <strong className="font-bold text-slate-900">{recipe.macros.fats}</strong></span>
+
+        {/* Vertical Structured Sub-Label Macro Container */}
+        <div className="flex items-center gap-2.5 text-[11px] md:text-xs bg-brand-tertiary/40 px-2.5 py-1 rounded-lg text-slate-800 font-medium">
+          <div className="flex flex-col items-center leading-tight">
+            <strong className="font-bold text-slate-900">{recipe.macros.protein}</strong>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Prot</span>
+          </div>
+          <span className="text-slate-300 font-light select-none">|</span>
+          <div className="flex flex-col items-center leading-tight">
+            <strong className="font-bold text-slate-900">{recipe.macros.carbs}</strong>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Carb</span>
+          </div>
+          <span className="text-slate-300 font-light select-none">|</span>
+          <div className="flex flex-col items-center leading-tight">
+            <strong className="font-bold text-slate-900">{recipe.macros.fats}</strong>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Fat</span>
+          </div>
         </div>
       </div>
     </article>
