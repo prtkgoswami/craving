@@ -9,6 +9,7 @@ import SaaSMitrixFAQ from "@/components/SaaSMitrixFAQ";
 import { Utensils, RotateCw, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import posthog from "posthog-js";
+import Link from "next/link";
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<string[]>([]);
@@ -265,6 +266,34 @@ export default function Home() {
 
       <hr className="border-brand-tertiary" />
       <SaaSMitrixFAQ />
+
+      <footer className="w-full max-w-7xl mx-auto px-4 md:px-8 py-6 border-t border-brand-tertiary/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500">
+        <div>
+          &copy; {new Date().getFullYear()} Craving App. Built by{" "}
+          <a
+            href="https://pratikgoswami.dev/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-brand-primary underline transition-colors"
+          >
+            Pratik Goswami
+          </a>
+        </div>
+        <div className="flex items-center gap-6">
+          <Link
+            href="/privacy"
+            className="hover:text-brand-primary transition-colors underline underline-offset-2"
+          >
+            Privacy Policy
+          </Link>
+          <a
+            href="mailto:pratiksapps+craving@gmail.com"
+            className="hover:text-brand-primary transition-colors underline underline-offset-2"
+          >
+            Support
+          </a>
+        </div>
+      </footer>
 
       <RecipeModal
         recipe={selectedRecipe}
