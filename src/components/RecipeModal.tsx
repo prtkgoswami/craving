@@ -33,7 +33,7 @@ export default function RecipeModal({ recipe, userIngredients, onClose }: Recipe
     <div 
       ref={overlayRef}
       onClick={handleOutsideClick}
-      className="fixed inset-0 bg-brand-secondary/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-default"
+      className="fixed h-screen inset-0 bg-brand-secondary/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-default"
     >
       <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col cursor-default">
         {/* Preserved: Original brand-tertiary headers */}
