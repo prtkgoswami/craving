@@ -10,6 +10,7 @@ import { Utensils, RotateCw, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import posthog from "posthog-js";
 import Link from "next/link";
+import FeedbackButton from "@/components/FeedbackButton";
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<string[]>([]);
@@ -187,7 +188,7 @@ export default function Home() {
             )}
 
             {!isLoading && recipes.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-400 rounded-2xl bg-[#F4EDE3]/25 my-auto p-6 shadow-sm">
+              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-400 rounded-2xl bg-[#F4EDE3]/25 my-20 p-6 shadow-sm">
                 <Utensils className="w-12 h-12 text-slate-600 mb-4" />
                 <p className="font-serif text-xl md:text-2xl text-slate-800 font-bold tracking-tight text-center">
                   Your presentation plate is clean
@@ -300,6 +301,7 @@ export default function Home() {
         userIngredients={ingredients}
         onClose={() => setSelectedRecipe(null)}
       />
+      <FeedbackButton currentIngredients={ingredients} />
     </main>
   );
 }
